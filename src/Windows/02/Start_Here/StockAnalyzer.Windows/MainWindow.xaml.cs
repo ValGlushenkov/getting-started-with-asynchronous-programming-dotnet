@@ -27,7 +27,14 @@ namespace StockAnalyzer.Windows
             StockProgress.IsIndeterminate = true;
             #endregion
 
-            await GetStocks();
+            try 
+            {
+                await GetStocks();
+            }
+            catch(Exception ex)
+            {
+                Notes.Text += ex.Message;
+            }
 
             #region After stock data is loaded
             StocksStatus.Text = $"Loaded stocks for {Ticker.Text} in {watch.ElapsedMilliseconds}ms";
