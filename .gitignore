@@ -332,3 +332,5 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/src/Windows/02/Start_Here/.vs/StockAnalyzer/v16/Server/sqlite3
+/src/Windows/02/Start_Here/.vs/StockAnalyzer/DesignTimeBuild
