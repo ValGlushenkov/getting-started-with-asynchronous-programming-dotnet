@@ -26,7 +26,7 @@ namespace StockAnalyzer.Windows
 
         CancellationTokenSource cancellationTokenSource = null;
 
-        private async void Search_Click(object sender, RoutedEventArgs e)
+        private void Search_Click(object sender, RoutedEventArgs e)
         {
             #region Before loading stock data
             var watch = new Stopwatch();
@@ -38,10 +38,15 @@ namespace StockAnalyzer.Windows
             #endregion
 
             //Executes on a different thread from UI one.
-            await Task.Run(() => { 
+            var loadedLinesTask =  Task.Run(() => { 
             
                 var lines = File.ReadAllLines(@"StockPrices_Small.csv");
+                return lines;
+            });
 
+            //creates a continuation but on a different thread.
+            var processStocksTask = loadedLinesTask.ContinueWith(t => {
+                var lines = t.Result; // Result is ok when operation is finished
                 var data = new List<StockPrice>();
 
                 foreach (var line in lines.Skip(1))
@@ -65,12 +70,18 @@ namespace StockAnalyzer.Windows
                     Stocks.ItemsSource = data.Where(price => price.Ticker == Ticker.Text);
                 });
             });
+            
+            //we don't care if this task is completed
+            processStocksTask.ContinueWith(_ => {
+                Dispatcher.Invoke(() => { 
+                    #region After stock data is loaded
+                    StocksStatus.Text = $"Loaded stocks for {Ticker.Text} in {watch.ElapsedMilliseconds}ms";
+                    StockProgress.Visibility = Visibility.Hidden;
+                    Search.Content = "Search";
+                    #endregion
+                });
+            });
 
-            #region After stock data is loaded
-            StocksStatus.Text = $"Loaded stocks for {Ticker.Text} in {watch.ElapsedMilliseconds}ms";
-            StockProgress.Visibility = Visibility.Hidden;
-            Search.Content = "Search";
-            #endregion
 
             cancellationTokenSource = null;
         }
