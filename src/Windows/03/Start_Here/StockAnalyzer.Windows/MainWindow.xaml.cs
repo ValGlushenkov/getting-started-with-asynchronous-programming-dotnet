@@ -56,34 +56,44 @@ namespace StockAnalyzer.Windows
 
             try
             {
-                var service = new StockService();
-                var data = await service.GetStockPricesFor(Ticker.Text, cancellationTokenSource.Token);
+                var tickers = Ticker.Text.Split(',', ' ');
 
-                Stocks.ItemsSource = data;
+                var service = new StockService();
+
+                var tickerLoadingTasks = new List<Task<IEnumerable<StockPrice>>>();
+                foreach(var ticker in tickers)
+                {
+                    //loads a new thread for each ticker
+                    var loadTask = service.GetStockPricesFor(Ticker.Text, cancellationTokenSource.Token);
+
+                    tickerLoadingTasks.Add(loadTask);
+                }
+
+                var timeoutTask = Task.Delay(2000); // 2 seconds
+                //Completes all threads
+                var allStocksLoadingTask = Task.WhenAll(tickerLoadingTasks);
+
+                var completedTasks = await Task.WhenAny(timeoutTask, allStocksLoadingTask);
+
+                if(completedTasks == timeoutTask)
+                {
+                    cancellationTokenSource.Cancel();
+                    cancellationTokenSource = null;
+                    throw new Exception("Timeout!");
+                }
+
+                Stocks.ItemsSource = allStocksLoadingTask.Result.SelectMany(stocks => stocks);
             }
             catch(Exception ex)
             {
                 Notes.Text += ex.Message + Environment.NewLine;
-            }
-
-            //Executed only when a previous task throws an exception
-            loadedLinesTask.ContinueWith(t =>
-            {
-                Dispatcher.Invoke(() => {
-                    Notes.Text = t.Exception.InnerException.Message;
-                });
-            },  TaskContinuationOptions.OnlyOnFaulted);
+            }            
             
-            //we don't care if this task is completed
-            processStocksTask.ContinueWith(_ => {
-                Dispatcher.Invoke(() => { 
-                    #region After stock data is loaded
-                    StocksStatus.Text = $"Loaded stocks for {Ticker.Text} in {watch.ElapsedMilliseconds}ms";
-                    StockProgress.Visibility = Visibility.Hidden;
-                    Search.Content = "Search";
-                    #endregion
-                });
-            });
+            #region After stock data is loaded
+            StocksStatus.Text = $"Loaded stocks for {Ticker.Text} in {watch.ElapsedMilliseconds}ms";
+            StockProgress.Visibility = Visibility.Hidden;
+            Search.Content = "Search";
+            #endregion
 
 
             cancellationTokenSource = null;
