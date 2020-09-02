@@ -3,6 +3,9 @@ using System.Web;
 using System.Web.Hosting;
 using System.Web.Mvc;
 using StockAnalyzer.Core;
+using System.Collections.Generic;
+using StockAnalyzer.Windows;
+using StockAnalyzer.Core.Domain;
 
 namespace StockAnalyzer.Web.Controllers
 {
@@ -23,15 +26,24 @@ namespace StockAnalyzer.Web.Controllers
         [Route("Stock/{ticker}")]
         public async Task<ActionResult> Stock(string ticker)
         {
-            if (string.IsNullOrWhiteSpace(ticker)) ticker = "MSFT";
+            var context = HttpContext.ApplicationInstance.Context;
 
-            ViewBag.Title = $"Stock Details for {ticker}";
-
-            var store = new DataStore(HostingEnvironment.MapPath("~/bin"));
-
-            var data = await store.LoadStocks();
+            var data = await GetStocks();
 
             return View(data[ticker]);
+        }
+
+        public async Task<Dictionary<string, IEnumerable<StockPrice>>> GetStocks()
+        {
+            var store = new DataStore("");
+
+            var data = await store
+                .LoadStocks()
+                .ConfigureAwait(false);
+
+            var context = HttpContext.ApplicationInstance.Context;
+
+            return data;
         }
     }
 }

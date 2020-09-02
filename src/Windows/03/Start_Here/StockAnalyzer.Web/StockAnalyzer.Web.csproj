@@ -267,6 +267,10 @@
       <Project>{4571844D-AD38-44DA-B934-980858C5EB00}</Project>
       <Name>StockAnalyzer.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\StockAnalyzer.Windows\StockAnalyzer.Windows.csproj">
+      <Project>{c8f01325-3aa2-4435-a55f-cf411820fb90}</Project>
+      <Name>StockAnalyzer.Windows</Name>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
