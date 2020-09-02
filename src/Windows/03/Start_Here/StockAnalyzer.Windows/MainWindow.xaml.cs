@@ -58,31 +58,47 @@ namespace StockAnalyzer.Windows
             {
                 var tickers = Ticker.Text.Split(',', ' ');
 
-                var service = new MockStockService();
+                var service = new StockService();
+                //Concurrent bag is a thread safe collection that allows us to add data from different threads.
+                var stocks = new ConcurrentBag<StockPrice>();
 
                 var tickerLoadingTasks = new List<Task<IEnumerable<StockPrice>>>();
                 foreach(var ticker in tickers)
                 {
                     //loads a new thread for each ticker
-                    var loadTask = service.GetStockPricesFor(Ticker.Text, cancellationTokenSource.Token);
+                    var loadTask = service.GetStockPricesFor(Ticker.Text, cancellationTokenSource.Token)
+                        .ContinueWith(t => { 
+                            //Adds 5 stocks from each ticker as they come in from the service
+                            foreach(var stock in t.Result.Take(5))
+                            {
+                                stocks.Add(stock);
+                            }
+
+                            Dispatcher.Invoke(() => {
+                                Stocks.ItemsSource = stocks.ToArray();
+                            });
+
+                            return t.Result;
+                        });
 
                     tickerLoadingTasks.Add(loadTask);
                 }
 
-                var timeoutTask = Task.Delay(2000); // 2 seconds
                 //Completes all threads
                 var allStocksLoadingTask = Task.WhenAll(tickerLoadingTasks);
+                #region Handling Timeout
+                //var timeoutTask = Task.Delay(2000); // 2 seconds
+                //var completedTasks = await Task.WhenAny(timeoutTask, allStocksLoadingTask);
 
-                var completedTasks = await Task.WhenAny(timeoutTask, allStocksLoadingTask);
+                //if(completedTasks == timeoutTask)
+                //{
+                //    cancellationTokenSource.Cancel();
+                //    cancellationTokenSource = null;
+                //    throw new Exception("Timeout!");
+                //}
+                #endregion
 
-                if(completedTasks == timeoutTask)
-                {
-                    cancellationTokenSource.Cancel();
-                    cancellationTokenSource = null;
-                    throw new Exception("Timeout!");
-                }
-
-                Stocks.ItemsSource = allStocksLoadingTask.Result.SelectMany(stocks => stocks);
+                await allStocksLoadingTask;
             }
             catch(Exception ex)
             {
