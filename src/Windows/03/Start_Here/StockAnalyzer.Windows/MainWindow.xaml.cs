@@ -70,7 +70,15 @@ namespace StockAnalyzer.Windows
                 Dispatcher.Invoke(() => { 
                     Stocks.ItemsSource = data.Where(price => price.Ticker == Ticker.Text);
                 });
-            });
+            }, TaskContinuationOptions.OnlyOnRanToCompletion); // ran only when task doesn't fail
+
+            //Executed only when a previous task throws an exception
+            loadedLinesTask.ContinueWith(t =>
+            {
+                Dispatcher.Invoke(() => {
+                    Notes.Text = t.Exception.InnerException.Message;
+                });
+            },  TaskContinuationOptions.OnlyOnFaulted);
             
             //we don't care if this task is completed
             processStocksTask.ContinueWith(_ => {
