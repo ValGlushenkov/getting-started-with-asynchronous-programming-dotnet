@@ -37,13 +37,22 @@ namespace StockAnalyzer.Windows
             Search.Content = "Cancel";
             #endregion
 
-            //Executes on a different thread from UI one.
-            var loadedLinesTask =  Task.Run(() => 
+            if(cancellationTokenSource != null)
             {
-                var lines = File.ReadAllLines(@"StockPrices_Small.csv");
-                
-                return lines;
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource = null;
+                return;
+            }
+
+            cancellationTokenSource = new CancellationTokenSource();
+
+            //register a delegate that is called when cancelation token is canceled
+            cancellationTokenSource.Token.Register(() => {
+                Notes.Text = "Cancelation requested";
             });
+
+            //Executes on a different thread from UI one.
+            var loadedLinesTask = SearchForStocks(cancellationTokenSource.Token);
 
             //creates a continuation but on a different thread.
             var processStocksTask = loadedLinesTask.ContinueWith(t => {
@@ -70,7 +79,10 @@ namespace StockAnalyzer.Windows
                 Dispatcher.Invoke(() => { 
                     Stocks.ItemsSource = data.Where(price => price.Ticker == Ticker.Text);
                 });
-            }, TaskContinuationOptions.OnlyOnRanToCompletion); // ran only when task doesn't fail
+            }, cancellationTokenSource.Token, 
+            TaskContinuationOptions.OnlyOnRanToCompletion, 
+            TaskScheduler.Current); // ran only when task doesn't fail
+            //TaskScheduler specifies that it will run if there is no cancelation.
 
             //Executed only when a previous task throws an exception
             loadedLinesTask.ContinueWith(t =>
@@ -106,7 +118,7 @@ namespace StockAnalyzer.Windows
                     string line;
                     while ((line = await stream.ReadLineAsync()) != null)
                     {
-                        if (cancellationToken.IsCancellationRequested)
+                        if(cancellationToken.IsCancellationRequested)
                         {
                             return lines;
                         }
