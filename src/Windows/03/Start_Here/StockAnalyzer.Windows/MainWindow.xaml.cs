@@ -38,10 +38,19 @@ namespace StockAnalyzer.Windows
             #endregion
 
             //Executes on a different thread from UI one.
-            var loadedLinesTask =  Task.Run(() => { 
-            
-                var lines = File.ReadAllLines(@"StockPrices_Small.csv");
-                return lines;
+            var loadedLinesTask =  Task.Run( async () => 
+            {
+                using (var stream = new StreamReader(File.OpenRead(@"StockPrices_Small.csv")))
+                {
+                    var lines = new List<string>();
+
+                    string line;
+                    while((line = await stream.ReadLineAsync()) != null)
+                    {
+                        lines.Add(line);
+                    }
+                    return lines;
+                }
             });
 
             //creates a continuation but on a different thread.
