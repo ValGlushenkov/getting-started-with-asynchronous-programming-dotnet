@@ -26,7 +26,7 @@ namespace StockAnalyzer.Windows
 
         CancellationTokenSource cancellationTokenSource = null;
 
-        private void Search_Click(object sender, RoutedEventArgs e)
+        private async void Search_Click(object sender, RoutedEventArgs e)
         {
             #region Before loading stock data
             var watch = new Stopwatch();
@@ -54,35 +54,17 @@ namespace StockAnalyzer.Windows
             //Executes on a different thread from UI one.
             var loadedLinesTask = SearchForStocks(cancellationTokenSource.Token);
 
-            //creates a continuation but on a different thread.
-            var processStocksTask = loadedLinesTask.ContinueWith(t => {
-                var lines = t.Result; // Result is ok when operation is finished
-                var data = new List<StockPrice>();
+            try
+            {
+                var service = new StockService();
+                var data = await service.GetStockPricesFor(Ticker.Text, cancellationTokenSource.Token);
 
-                foreach (var line in lines.Skip(1))
-                {
-                    var segments = line.Split(',');
-
-                    for (var i = 0; i < segments.Length; i++) segments[i] = segments[i].Trim('\'', '"');
-                    var price = new StockPrice
-                    {
-                        Ticker = segments[0],
-                        TradeDate = DateTime.ParseExact(segments[1], "M/d/yyyy h:mm:ss tt", CultureInfo.InvariantCulture),
-                        Volume = Convert.ToInt32(segments[6], CultureInfo.InvariantCulture),
-                        Change = Convert.ToDecimal(segments[7], CultureInfo.InvariantCulture),
-                        ChangePercent = Convert.ToDecimal(segments[8], CultureInfo.InvariantCulture),
-                    };
-                    data.Add(price);
-                }
-                
-                //Links this thread to a UI one.
-                Dispatcher.Invoke(() => { 
-                    Stocks.ItemsSource = data.Where(price => price.Ticker == Ticker.Text);
-                });
-            }, cancellationTokenSource.Token, 
-            TaskContinuationOptions.OnlyOnRanToCompletion, 
-            TaskScheduler.Current); // ran only when task doesn't fail
-            //TaskScheduler specifies that it will run if there is no cancelation.
+                Stocks.ItemsSource = data;
+            }
+            catch(Exception ex)
+            {
+                Notes.Text += ex.Message + Environment.NewLine;
+            }
 
             //Executed only when a previous task throws an exception
             loadedLinesTask.ContinueWith(t =>
