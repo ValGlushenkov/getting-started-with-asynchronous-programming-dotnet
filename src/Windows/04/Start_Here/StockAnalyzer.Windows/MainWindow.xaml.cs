@@ -68,10 +68,51 @@ namespace StockAnalyzer.Windows
                 }
                 #endregion
 
-                var loadedStocks = await Task.WhenAll(tickerLoadingTasks);
+                var loadedStocks = (await Task.WhenAll(tickerLoadingTasks)).SelectMany(stocks => stocks);
+                //Parallel extension might force threads to run parallel on different CPU cores.
+                //It will lock the current thread. You can put it into Task.Run call.
+                //MaxDegreeOfParallelism limits to maximum amount of cores it can be executed simuanteneously. 
+                Parallel.Invoke( new ParallelOptions { MaxDegreeOfParallelism = 2},
+                    () => {
+                        #region Starting
+                        Debug.WriteLine("Starting Operation 1");
+                        #endregion
+                        CalculateExpensiveComputation(loadedStocks);
+                        #region Enging
+                        Debug.WriteLine("Completed Operation 1");
+                        #endregion
+                    },
+                    () => {
+                        #region Starting
+                        Debug.WriteLine("Starting Operation 2");
+                        #endregion
+                        CalculateExpensiveComputation(loadedStocks);
+                        #region Enging
+                        Debug.WriteLine("Completed Operation 2");
+                        #endregion
+                    },
+                    () => {
+                        #region Starting
+                        Debug.WriteLine("Starting Operation 3");
+                        #endregion
+                        CalculateExpensiveComputation(loadedStocks);
+                        #region Enging
+                        Debug.WriteLine("Completed Operation 3");
+                        #endregion
+                    },
+                    () => {
+                        #region Starting
+                        Debug.WriteLine("Starting Operation 4");
+                        #endregion
+                        CalculateExpensiveComputation(loadedStocks);
+                        #region Enging
+                        Debug.WriteLine("Completed Operation 4");
+                        #endregion
+                    }
+                    );
 
                 
-                Stocks.ItemsSource = loadedStocks.SelectMany(stocks => stocks);
+                Stocks.ItemsSource = loadedStocks;
             }
             catch (Exception ex)
             {
