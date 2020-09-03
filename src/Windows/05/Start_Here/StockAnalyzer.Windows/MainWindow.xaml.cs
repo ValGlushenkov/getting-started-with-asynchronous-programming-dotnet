@@ -122,7 +122,8 @@ namespace StockAnalyzer.Windows
         }
 
         public Task<IEnumerable<StockPrice>> GetStocksFor(string ticker)
-        {        
+        {
+            var source = new TaskCompletionSource<IEnumerable<StockPrice>();
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
@@ -146,15 +147,16 @@ namespace StockAnalyzer.Windows
                         };
                         prices.Add(price);
                     }
-
+                    source.SetResult(prices.Where(price => price.Ticker == ticker));
                 }
                 catch (Exception ex)
                 {
+                    source.SetException(ex);
                 }
             });
 
             // TODO: Change this
-            return Task.FromResult<IEnumerable<StockPrice>>(null); ;
+            return source.Task;
         }
 
         Random random = new Random();
