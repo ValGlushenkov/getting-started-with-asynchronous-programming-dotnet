@@ -53,7 +53,7 @@ namespace StockAnalyzer.Windows
 
             try
             {
-                Stocks.ItemsSource = await GetStocksFor(Ticker.Text);
+                await LoadStocks();
             }
             catch (Exception ex)
             {
