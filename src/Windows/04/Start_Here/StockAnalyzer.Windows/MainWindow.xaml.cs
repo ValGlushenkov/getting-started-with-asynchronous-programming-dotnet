@@ -23,6 +23,8 @@ namespace StockAnalyzer.Windows
             InitializeComponent();
         }
 
+        static object syncRoot = new object();
+
         CancellationTokenSource cancellationTokenSource = null;
 
         private async void Search_Click(object sender, RoutedEventArgs e)
@@ -72,11 +74,16 @@ namespace StockAnalyzer.Windows
                     .SelectMany(stock => stock)
                     .ToArray();
 
-                int total = 0;
+                decimal total = 0;
 
                 Parallel.For(0, loadedStocks.Length, i => {
-                    //thread safe way to add integers
-                    Interlocked.Add(ref total, (int)Compute(loadedStocks[i]));
+                    //perform computation outside locking context
+                    var value = Compute(loadedStocks[i]);
+                    lock(syncRoot)
+                    {
+                        //update total inside lock
+                        total += value;
+                    }
                 });
 
                 
