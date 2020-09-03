@@ -53,7 +53,8 @@ namespace StockAnalyzer.Windows
 
             try
             {
-                await LoadStocks();
+                //deadlocked the thread on purpose.
+                LoadStocks().Wait();
             }
             catch (Exception ex)
             {
