@@ -70,10 +70,11 @@ namespace StockAnalyzer.Windows
 
                 var loadedStocks = (await Task.WhenAll(tickerLoadingTasks));
 
-                var values = new List<StockCalculation>();
+                var values = new ConcurrentBag<StockCalculation>();
 
-                foreach(var stocks in loadedStocks)
-                {
+                var executionReuslt = Parallel.ForEach(loadedStocks, (stocks, state) => { 
+                
+                    
                     var result = CalculateExpensiveComputation(stocks);
 
                     var data = new StockCalculation
@@ -82,8 +83,10 @@ namespace StockAnalyzer.Windows
                         Result = result
                     };
                     values.Add(data);
-                }
+                });
                 
+                
+
                 Stocks.ItemsSource = values.ToArray();
             }
             catch (Exception ex)
