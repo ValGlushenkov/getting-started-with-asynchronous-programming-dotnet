@@ -53,8 +53,9 @@ namespace StockAnalyzer.Windows
 
             try
             {
-                //deadlocked the thread on purpose.
-                LoadStocks().Wait();
+                //Moves a state machine to a different thread.
+                //it will throw an exception but not block it.
+                Task.Run(() => LoadStocks()).Wait();
             }
             catch (Exception ex)
             {
