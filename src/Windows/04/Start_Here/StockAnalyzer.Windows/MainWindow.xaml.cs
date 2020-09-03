@@ -68,38 +68,21 @@ namespace StockAnalyzer.Windows
                 }
                 #endregion
 
-                var loadedStocks = (await Task.WhenAll(tickerLoadingTasks));
+                var loadedStocks = (await Task.WhenAll(tickerLoadingTasks))
+                    .SelectMany(stock => stock)
+                    .ToArray();
 
-                var values = new ConcurrentBag<StockCalculation>();
+                int total = 0;
 
-                var executionReuslt = Parallel.ForEach(loadedStocks, 
-                    new ParallelOptions { MaxDegreeOfParallelism = 2},
-                    (stocks, state) => {
-
-                    var ticker = stocks.First().Ticker;
-
-                    Debug.WriteLine($"Start processing {ticker}");
-
-                    if(ticker == "MSFT")
-                    {
-                        Debug.WriteLine($"Found {ticker}, breaking");
-                        state.Break();//break out of parallel loop
-                        return;//to exit out of loop.
-                    }
-                    
-                    var result = CalculateExpensiveComputation(stocks);
-
-                    var data = new StockCalculation
-                    {
-                        Ticker = stocks.First().Ticker,
-                        Result = result
-                    };
-                    values.Add(data);
+                Parallel.For(0, loadedStocks.Length, i => {
+                    //thread safe way to add integers
+                    Interlocked.Add(ref total, (int)Compute(loadedStocks[i]));
                 });
+
                 
                 
 
-                Stocks.ItemsSource = values.ToArray();
+                Stocks.ItemsSource = total.ToString();
             }
             catch (Exception ex)
             {
