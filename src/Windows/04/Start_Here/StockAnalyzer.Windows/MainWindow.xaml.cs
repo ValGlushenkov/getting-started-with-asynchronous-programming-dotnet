@@ -72,8 +72,20 @@ namespace StockAnalyzer.Windows
 
                 var values = new ConcurrentBag<StockCalculation>();
 
-                var executionReuslt = Parallel.ForEach(loadedStocks, (stocks, state) => { 
-                
+                var executionReuslt = Parallel.ForEach(loadedStocks, 
+                    new ParallelOptions { MaxDegreeOfParallelism = 2},
+                    (stocks, state) => {
+
+                    var ticker = stocks.First().Ticker;
+
+                    Debug.WriteLine($"Start processing {ticker}");
+
+                    if(ticker == "MSFT")
+                    {
+                        Debug.WriteLine($"Found {ticker}, breaking");
+                        state.Break();//break out of parallel loop
+                        return;//to exit out of loop.
+                    }
                     
                     var result = CalculateExpensiveComputation(stocks);
 
