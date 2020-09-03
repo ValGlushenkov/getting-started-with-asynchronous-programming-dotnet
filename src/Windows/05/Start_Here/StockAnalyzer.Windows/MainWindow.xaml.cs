@@ -53,18 +53,7 @@ namespace StockAnalyzer.Windows
 
             try
             {
-                StockProgress.IsIndeterminate = false;
-                StockProgress.Value = 0;
-                StockProgress.Maximum = Ticker.Text.Split(',', ' ').Count();
-
-                var progress = new Progress<IEnumerable<StockPrice>>();
-                progress.ProgressChanged += (_, stocks) => {
-                    StockProgress.Value += 1;
-                    Notes.Text += $"Loaded {stocks.Count()} for {stocks.First().Ticker}" +
-                    $"{Environment.NewLine}";
-                };
-
-                await LoadStocks(progress);
+                Stocks.ItemsSource = await GetStocksFor(Ticker.Text);
             }
             catch (Exception ex)
             {
