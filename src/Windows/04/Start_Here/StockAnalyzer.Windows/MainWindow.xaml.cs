@@ -37,7 +37,7 @@ namespace StockAnalyzer.Windows
 
             Search.Content = "Cancel";
             #endregion
-
+            
             #region Cancellation
             if (cancellationTokenSource != null)
             {

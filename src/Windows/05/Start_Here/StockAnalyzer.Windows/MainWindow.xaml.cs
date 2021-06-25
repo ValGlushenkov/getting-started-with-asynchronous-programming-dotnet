@@ -125,7 +125,7 @@ namespace StockAnalyzer.Windows
 
         public Task<IEnumerable<StockPrice>> GetStocksFor(string ticker)
         {
-            var source = new TaskCompletionSource<IEnumerable<StockPrice>();
+            var source = new TaskCompletionSource<IEnumerable<StockPrice>>();
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
